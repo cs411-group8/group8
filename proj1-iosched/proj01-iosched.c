@@ -132,6 +132,6 @@ module_init(proj01_init);
 module_exit(proj01_exit);
 
 
-MODULE_AUTHOR("Jens Axboe");
+MODULE_AUTHOR("cs411 team08");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("No-op IO scheduler");
+MODULE_DESCRIPTION("CS411 Project 1 - No-op IO scheduler");
