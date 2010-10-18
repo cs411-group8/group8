@@ -1,5 +1,5 @@
 /* schedule.c
- * This file contains the primary logic for the 
+ * This file contains the primary logic for the
  * scheduler.
  */
 #include "schedule.h"
@@ -20,7 +20,7 @@ struct task_struct *current;
 
 /* External Globals
  * jiffies - A discrete unit of time used for scheduling.
- *			 There are HZ jiffies in a second, (HZ is 
+ *			 There are HZ jiffies in a second, (HZ is
  *			 declared in macros.h), and is usually
  *			 1 or 10 milliseconds.
  */
@@ -31,11 +31,11 @@ extern long long jiffies;
 /* This code is not used by the scheduler, but by the virtual machine
  * to setup and destroy the scheduler cleanly.
  */
- 
+
  /* initscheduler
   * Sets up and allocates memory for the scheduler, as well
   * as sets initial values. This function should also
-  * set the initial effective priority for the "seed" task 
+  * set the initial effective priority for the "seed" task
   * and enqueu it in the scheduler.
   * INPUT:
   * newrq - A pointer to an allocated rq to assign to your
@@ -48,7 +48,7 @@ void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 }
 
 /* killschedule
- * This function should free any memory that 
+ * This function should free any memory that
  * was allocated when setting up the runqueu.
  * It SHOULD NOT free the runqueue itself.
  */
@@ -85,7 +85,7 @@ void dequeue_task(struct task_struct *p, struct sched_array *array)
  * Sets up schedule info for a newly forked task
  */
 void sched_fork(struct task_struct *p)
-{	
+{
 }
 
 /* scheduler_tick
@@ -93,19 +93,19 @@ void sched_fork(struct task_struct *p)
  * for the task that is currently running.
  */
 void scheduler_tick(struct task_struct *p)
-{	
+{
 }
 
 /* wake_up_new_task
  * Prepares information for a task
  * that is waking up for the first time
  * (being created).
- * Also handles preemption, e.g. decides 
+ * Also handles preemption, e.g. decides
  * whether or not the current task should
  * call scheduler to allow for this one to run
  */
 void wake_up_new_task(struct task_struct *p)
-{	
+{
 }
 
 /* __activate_task
@@ -121,7 +121,7 @@ void __activate_task(struct task_struct *p)
  * from sleeping.
  */
 void activate_task(struct task_struct *p)
-{		
+{
 }
 
 /* deactivate_task
