@@ -45,6 +45,11 @@ extern long long jiffies;
   */
 void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 {
+	rq = newrq;
+	rq->active = &(rq->arrays[0]);
+	rq->expired = &(rq->arrays[1]);
+	INIT_LIST_HEAD(&rq->active->items);
+	INIT_LIST_HEAD(&rq->expired->items);
 }
 
 /* killschedule
@@ -72,6 +77,8 @@ void schedule()
  */
 void enqueue_task(struct task_struct *p, struct sched_array *array)
 {
+	p->array = array;
+	list_add_tail(&p->run_list, &array->items);
 }
 
 /* dequeue_task
@@ -79,6 +86,8 @@ void enqueue_task(struct task_struct *p, struct sched_array *array)
  */
 void dequeue_task(struct task_struct *p, struct sched_array *array)
 {
+	p->array = NULL;
+	list_del_init(&p->run_list);
 }
 
 /* sched_fork
