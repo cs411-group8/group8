@@ -56,7 +56,8 @@ void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 	rq->nr_running = 0;
 	rq->nr_switches = 0;
 
-	seedTask->time_slice = NEWTASKSLICE;
+	seedTask->first_time_slice = NEWTASKSLICE;
+	seedTask->time_slice = seedTask->first_time_slice;
 	activate_task(seedTask);
 }
 
@@ -141,6 +142,9 @@ void sched_fork(struct task_struct *p)
 
 	// Make sure time isn't lost on odd numbers
 	p->time_slice += odd;
+
+	// Inherit the parents first_time_slice
+	p->first_time_slice = current->first_time_slice;
 }
 
 /* scheduler_tick
@@ -151,8 +155,18 @@ void scheduler_tick(struct task_struct *p)
 {
 	p->time_slice--;
 
-	// If the time slice is expired
+	// If the time slice is expired, issue another
 	if (p->time_slice <= 0) {
+		// Remove from the queue
+		dequeue_task(p, rq->active);
+
+		// Issue a new time slice
+		p->time_slice = p->first_time_slice;
+
+		// Insert back into the queue
+		enqueue_task(p, rq->active);
+
+		// Ask for a re-schedule
 		p->need_reschedule = 1;
 	}
 }
