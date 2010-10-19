@@ -46,10 +46,18 @@ extern long long jiffies;
 void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 {
 	rq = newrq;
+
 	rq->active = &(rq->arrays[0]);
 	rq->expired = &(rq->arrays[1]);
 	INIT_LIST_HEAD(&rq->active->items);
 	INIT_LIST_HEAD(&rq->expired->items);
+
+	rq->curr = NULL;
+	rq->nr_running = 0;
+	rq->nr_switches = 0;
+
+	seedTask->time_slice = NEWTASKSLICE;
+	activate_task(seedTask);
 }
 
 /* killschedule
@@ -69,6 +77,25 @@ void killschedule()
  */
 void schedule()
 {
+	struct task_struct *prev, *task;
+	prev = rq->curr;
+
+	// Nothing to do if there are no tasks
+	if (rq->nr_running == 0) return;
+
+	// Find the first task with a non-zero slice
+	list_for_each_entry(task, &rq->active->items, run_list) {
+		if (task->time_slice > 0) {
+			rq->curr = task;
+			break;
+		}
+	}
+
+	// Trigger a context_switch if the 'curr' task has change
+	if (rq->curr != prev) {
+		context_switch(rq->curr);
+		rq->nr_switches++;
+	}
 }
 
 
@@ -77,7 +104,18 @@ void schedule()
  */
 void enqueue_task(struct task_struct *p, struct sched_array *array)
 {
+	struct task_struct *task;
 	p->array = array;
+
+	// Insert p immediately in front of the first task it needs less time than
+	list_for_each_entry(task, &array->items, run_list) {
+		if (p->time_slice < task->time_slice) {
+			list_add_tail(&p->run_list, &task->run_list);
+			return;
+		}
+	}
+
+	// If it needs more time than any other task, add it to the end of the queue
 	list_add_tail(&p->run_list, &array->items);
 }
 
@@ -86,8 +124,8 @@ void enqueue_task(struct task_struct *p, struct sched_array *array)
  */
 void dequeue_task(struct task_struct *p, struct sched_array *array)
 {
+	list_del(&p->run_list);
 	p->array = NULL;
-	list_del_init(&p->run_list);
 }
 
 /* sched_fork
@@ -95,6 +133,14 @@ void dequeue_task(struct task_struct *p, struct sched_array *array)
  */
 void sched_fork(struct task_struct *p)
 {
+	int odd = current->time_slice % 2;
+
+	// Divide the remaining time between the parent and its child
+	current->time_slice = current->time_slice / 2;
+	p->time_slice = current->time_slice;
+
+	// Make sure time isn't lost on odd numbers
+	p->time_slice += odd;
 }
 
 /* scheduler_tick
@@ -103,6 +149,12 @@ void sched_fork(struct task_struct *p)
  */
 void scheduler_tick(struct task_struct *p)
 {
+	p->time_slice--;
+
+	// If the time slice is expired
+	if (p->time_slice <= 0) {
+		p->need_reschedule = 1;
+	}
 }
 
 /* wake_up_new_task
@@ -115,6 +167,13 @@ void scheduler_tick(struct task_struct *p)
  */
 void wake_up_new_task(struct task_struct *p)
 {
+	// Add the task to the active queue
+	__activate_task(p);
+
+	// Trigger a reschedule if we should preempt the running task
+	if (p->time_slice < current->time_slice) {
+		p->need_reschedule = 1;
+	}
 }
 
 /* __activate_task
@@ -123,6 +182,8 @@ void wake_up_new_task(struct task_struct *p)
  */
 void __activate_task(struct task_struct *p)
 {
+	enqueue_task(p, rq->active);
+	rq->nr_running++;
 }
 
 /* activate_task
@@ -131,6 +192,8 @@ void __activate_task(struct task_struct *p)
  */
 void activate_task(struct task_struct *p)
 {
+	__activate_task(p);
+	p->need_reschedule = 1;
 }
 
 /* deactivate_task
@@ -139,4 +202,6 @@ void activate_task(struct task_struct *p)
  */
 void deactivate_task(struct task_struct *p)
 {
+	dequeue_task(p, rq->active);
+	rq->nr_running--;
 }

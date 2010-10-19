@@ -12,6 +12,7 @@ struct thread_info;
  * implement any type of scheduler that you want.
  */
 struct sched_array {
+	struct list_head items;
 };
 
 /* ---------------- Do NOT Touch -------------- */
