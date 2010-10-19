@@ -2,6 +2,9 @@ PUBLICH = macros.h list.h
 PRIVATEH = privatestructs.h
 SCHEDULE = schedule.c schedule.h
 
+CC = gcc
+CFLAGS = -g
+
 .PHONY: default
 default: clear app
 
@@ -21,13 +24,13 @@ lib: cpu.o cpuinit.o
 	ar rcs libvm.a cpu.o cpuinit.o
 
 app: cpu.o cpuinit.o  schedule.o
-	gcc -o vmsched cpuinit.o cpu.o schedule.o
+	$(CC) $(CFLAGS) -o vmsched cpuinit.o cpu.o schedule.o
 
 cpu.o: cpu.c $(SCHEDULE) $(PUBLICH) $(PRIVATEH)
-	gcc -c cpu.c
+	$(CC) $(CFLAGS) -c cpu.c
 
 cpuinit.o: cpuinit.c $(SCHEDULE) $(PUBLICH) $(PRIVATEH)
-	gcc -c cpuinit.c
+	$(CC) $(CFLAGS) -c cpuinit.c
 
 schedule.o: $(SCHEDULE) $(PUBLICH)
-	gcc -c schedule.c
+	$(CC) $(CFLAGS) -c schedule.c
