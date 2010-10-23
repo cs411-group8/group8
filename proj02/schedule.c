@@ -141,6 +141,8 @@ void __activate_task(struct task_struct *p)
  */
 void activate_task(struct task_struct *p)
 {
+	__activate_task(p);
+	p->need_reschedule = 1;
 }
 
 /* deactivate_task
