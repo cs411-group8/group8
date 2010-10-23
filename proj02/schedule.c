@@ -151,4 +151,6 @@ void activate_task(struct task_struct *p)
  */
 void deactivate_task(struct task_struct *p)
 {
+	dequeue_task(p, rq->active);
+	rq->nr_running--;
 }
