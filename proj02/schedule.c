@@ -70,13 +70,11 @@ void schedule()
 	//if there are no tasks, stop here
 	if (rq->nr_running == 0) return;
 	
-	//list should be pre-sorted by shortest remaining time
-	//just grab the first one
-
-	list_for_each(task, rq->active->head){
+	//list should be sorted by timeslice.
+	//get task with SRTF (and timeslice > 0).
+	list_for_each_entry(task, &rq->active->items, run_list){
 		if(task->time_slice > 0){
 			if(task != rq->curr){
-				//if task is not already in cpu, do switch
 				context_switch(task);
 				rq->nr_switches++;
 			}
