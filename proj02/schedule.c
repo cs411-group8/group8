@@ -64,6 +64,24 @@ void killschedule()
  */
 void schedule()
 {
+	struct task_struct *task;
+	
+	//if there are no tasks, stop here
+	if (rq->nr_running == 0) return;
+	
+	//list should be pre-sorted by shortest remaining time
+	//just grab the first one
+
+	list_for_each(task, rq->active->head){
+		if(task->time_slice > 0){
+			if(task != rq->curr){
+				context_switch(task);
+				rq->nr_switches++;
+			}
+			break;
+		}
+	}	
+	return;
 }
 
 
