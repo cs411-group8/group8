@@ -61,6 +61,7 @@ void killschedule()
 
 /* schedule
  * Gets the next task with the shortest runtime(time slice) remaining
+ * Calls context_switch to put new task 'in cpu'.
  */
 void schedule()
 {
@@ -75,13 +76,13 @@ void schedule()
 	list_for_each(task, rq->active->head){
 		if(task->time_slice > 0){
 			if(task != rq->curr){
+				//if task is not already in cpu, do switch
 				context_switch(task);
 				rq->nr_switches++;
 			}
-			break;
+			return;
 		}
 	}	
-	return;
 }
 
 
@@ -132,6 +133,8 @@ void wake_up_new_task(struct task_struct *p)
  */
 void __activate_task(struct task_struct *p)
 {
+	enqueue_task(p, rq->active);
+	rq->nr_running++;
 }
 
 /* activate_task
