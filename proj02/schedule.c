@@ -83,6 +83,7 @@ void schedule()
 	list_for_each_entry(task, &rq->active->items, run_list){
 		if(task->time_slice > 0){
 			if(task != rq->curr){
+				rq->curr = task;
 				context_switch(task);
 				rq->nr_switches++;
 			}
