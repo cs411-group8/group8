@@ -92,17 +92,13 @@ void schedule()
 	if (rq->nr_running == 0) return;
 	
 	//list should be sorted by timeslice.
-	//get task with SRTF (and timeslice > 0).
-	list_for_each_entry(task, &rq->active->items, run_list){
-		if(task->time_slice > 0){
-			if(task != rq->curr){
-				rq->curr = task;
-				context_switch(task);
-				rq->nr_switches++;
-			}
-			return;
-		}
-	}	
+	//get task with SRTF
+	task = list_entry(rq->active->items.next, struct task_struct, run_list);
+	if (task != rq->curr) {
+		rq->curr = task;
+		context_switch(task);
+		rq->nr_switches++;
+	}
 }
 
 /* enqueue_task
