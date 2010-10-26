@@ -1,7 +1,20 @@
-/* schedule.c
- * This file contains the primary logic for the
- * scheduler.
- */
+///////////////////////////////////////////////////////////
+//					GROUP 8
+//
+//					PROJECT #2
+//
+//  MEMBERS:    AARON BREAULT
+//				RUSSELL HAERING
+//				SCOTT ROSENBALM
+//				BRAD NELSON
+//
+//  DESCRIPTION:
+//	The schedule.c file implements a pseudo shortest remaining
+//  time first (SRTF) algorithm that controls the work sent
+//  to the CPU.  Contains primary logic for the scheduler.
+//
+///////////////////////////////////////////////////////////
+
 #include "schedule.h"
 #include "macros.h"
 #include <stddef.h>
