@@ -105,12 +105,24 @@ void schedule()
 	}	
 }
 
-
 /* enqueue_task
  * Enqeueus a task in the passed sched_array
  */
 void enqueue_task(struct task_struct *p, struct sched_array *array)
 {
+	struct task_struct *task;
+	p->array = array;
+
+	// Insert p immediately in front of the first task it needs less time than
+	list_for_each_entry(task, &array->items, run_list) {
+		if (p->time_slice < task->time_slice) {
+			list_add_tail(&p->run_list, &task->run_list);
+			return;
+		}
+	}
+
+	// If it needs more time than any other task, add it to the end of the queue
+	list_add_tail(&p->run_list, &array->items);
 }
 
 /* dequeue_task
@@ -118,6 +130,8 @@ void enqueue_task(struct task_struct *p, struct sched_array *array)
  */
 void dequeue_task(struct task_struct *p, struct sched_array *array)
 {
+	list_del(&p->run_list);
+	p->array = NULL;
 }
 
 /* sched_fork
@@ -176,6 +190,13 @@ void scheduler_tick(struct task_struct *p)
  */
 void wake_up_new_task(struct task_struct *p)
 {
+	// Add the task to the active queue
+	__activate_task(p);
+
+	// Trigger a reschedule if we should preempt the running task
+	if (p->time_slice < current->time_slice) {
+		p->need_reschedule = 1;
+	}
 }
 
 /* __activate_task
