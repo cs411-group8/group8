@@ -1,15 +1,15 @@
 ///////////////////////////////////////////////////////////
-//					GROUP 8
+//                                      GROUP 8
 //
-//					PROJECT #2
+//                                      PROJECT #2
 //
 //  MEMBERS:    AARON BREAULT
-//				RUSSELL HAERING
-//				SCOTT ROSENBALM
-//				BRAD NELSON
+//              RUSSELL HAERING
+//              SCOTT ROSENBALM
+//              BRAD NELSON
 //
 //  DESCRIPTION:
-//	The schedule.c file implements a pseudo shortest remaining
+//    The schedule.c file implements a pseudo shortest remaining
 //  time first (SRTF) algorithm that controls the work sent
 //  to the CPU.  Contains primary logic for the scheduler.
 //
@@ -59,7 +59,7 @@ extern long long jiffies;
 void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 {
 	rq = newrq;
-	
+
 	rq->active = &(rq->arrays[0]);
 	INIT_LIST_HEAD(&rq->active->items);
 
@@ -87,10 +87,10 @@ void killschedule()
 void schedule()
 {
 	struct task_struct *task;
-	
+
 	//if there are no tasks, stop here
 	if (rq->nr_running == 0) return;
-	
+
 	//list should be sorted by timeslice.
 	//get task with SRTF
 	task = list_entry(rq->active->items.next, struct task_struct, run_list);
@@ -137,7 +137,7 @@ void sched_fork(struct task_struct *p)
 {
  	int odd = current->time_slice % 2;
 
-    // Divide the remaining time between the parent and its child
+	// Divide the remaining time between the parent and its child
 	current->time_slice = current->time_slice / 2;
 	p->time_slice = current->time_slice;
 
@@ -145,7 +145,7 @@ void sched_fork(struct task_struct *p)
 	p->time_slice += odd;
 
 	// Inherit the parents first_time_slice
-	
+
 	p->first_time_slice = current->first_time_slice;
 
 
@@ -162,18 +162,18 @@ void scheduler_tick(struct task_struct *p)
 	// If the time slice is expired, issue another
 	if (p->time_slice <= 0)
 	{
-	     // Remove from the queue
-	     dequeue_task(p, rq->active);
+		// Remove from the queue
+		dequeue_task(p, rq->active);
 
-	     // Issue a new time slice
-	     p->time_slice = p->first_time_slice;
+		// Issue a new time slice
+		p->time_slice = p->first_time_slice;
 
-	    // Insert back into the queue
-         enqueue_task(p, rq->active);
-         // Ask for a re-schedule
-	     p->need_reschedule = 1;
-    }
+		// Insert back into the queue
+		enqueue_task(p, rq->active);
 
+		// Ask for a re-schedule
+		p->need_reschedule = 1;
+	}
 }
 
 /* wake_up_new_task
