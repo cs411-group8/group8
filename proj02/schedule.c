@@ -177,6 +177,13 @@ void scheduler_tick(struct task_struct *p)
  */
 void wake_up_new_task(struct task_struct *p)
 {
+	// Add the task to the active queue
+	__activate_task(p);
+
+	// Trigger a reschedule if we should preempt the running task
+	if (p->time_slice < current->time_slice) {
+		p->need_reschedule = 1;
+	}
 }
 
 /* __activate_task
