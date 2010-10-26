@@ -45,6 +45,14 @@ extern long long jiffies;
   */
 void initschedule(struct runqueue *newrq, struct task_struct *seedTask)
 {
+	rq = newrq;
+	
+	rq->active = &(rq->arrays[0]);
+	INIT_LIST_HEAD(&rq->active->items);
+
+	seedTask->first_time_slice = NEWTASKSLICE;
+	seedTask->time_slice = NEWTASKSLICE;
+	activate_task(seedTask);
 }
 
 /* killschedule
@@ -75,6 +83,7 @@ void schedule()
 	list_for_each_entry(task, &rq->active->items, run_list){
 		if(task->time_slice > 0){
 			if(task != rq->curr){
+				rq->curr = task;
 				context_switch(task);
 				rq->nr_switches++;
 			}
