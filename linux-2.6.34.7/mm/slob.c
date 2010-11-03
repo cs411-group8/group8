@@ -111,6 +111,25 @@ static inline void struct_slob_page_wrong_size(void)
 { BUILD_BUG_ON(sizeof(struct slob_page) != sizeof(struct page)); }
 
 /*
+ * We use the members of this struct to track the page, block and fit of the
+ * current best fit page.
+ */
+struct slob_best_block {
+	struct slob_page *page;
+	slob_t *block;
+	int fit;
+};
+
+/*
+ * init_best_block: initialize a slob_best_block */
+static void init_best_block(struct slob_best_block *bb)
+{
+	bb->page = NULL;
+	bb->block = NULL;
+	bb->fit = -1;
+}
+
+/*
  * free_slob_page: call before a slob_page is returned to the page allocator.
  */
 static inline void free_slob_page(struct slob_page *sp)
@@ -265,7 +284,8 @@ static void slob_free_pages(void *b, int order)
 /*
  * Allocate a slob block within a given slob_page sp.
  */
-static void *slob_page_alloc(struct slob_page *sp, size_t size, int align)
+static void slob_page_alloc(struct slob_page *sp, size_t size, int align,
+						  struct slob_best_block *bb)
 {
 	slob_t *prev, *cur, *aligned = NULL;
 	int delta = 0, units = SLOB_UNITS(size);
@@ -324,6 +344,9 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 	slob_t *b = NULL;
 	unsigned long flags;
 
+	struct slob_best_block bb;
+	init_best_block(&bb);
+
 	if (size < SLOB_BREAK1)
 		slob_list = &free_slob_small;
 	else if (size < SLOB_BREAK2)
@@ -348,9 +371,9 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 
 		/* Attempt to alloc */
 		prev = sp->list.prev;
-		b = slob_page_alloc(sp, size, align);
-		if (!b)
-			continue;
+		slob_page_alloc(sp, size, align, &bb);
+		if (bb->fit == 0)
+			break;
 
 		/* Improve fragment distribution and reduce our average
 		 * search time by starting our next search here. (see
@@ -361,6 +384,8 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 		break;
 	}
 	spin_unlock_irqrestore(&slob_lock, flags);
+
+	// Do allocation here (or maybe below new page allocation)
 
 	/* Not enough space: must allocate a new page */
 	if (!b) {
