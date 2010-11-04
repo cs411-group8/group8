@@ -352,9 +352,10 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 		if (sp->units < SLOB_UNITS(size))
 			continue;
 
-		/* Attempt to alloc */
 		prev = sp->list.prev;
-		slob_page_alloc(sp, size, align, &bb);
+
+		/* Search this page */
+		slob_page_search(sp, size, align, &bb);
 		if (bb->fit == 0)
 			break;
 
