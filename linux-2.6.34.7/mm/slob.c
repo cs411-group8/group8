@@ -284,7 +284,8 @@ static void slob_free_pages(void *b, int order)
 }
 
 /*
- * Search a slob_page for a better fit block than the one tracked in bb
+ * slob_page_search: search a slob_page for a better fit block than the one
+ * tracked in bb
  */
 static void slob_page_search(struct slob_page *sp, size_t size, int align,
 						  struct slob_best_block *bb)
@@ -317,7 +318,7 @@ static void slob_page_search(struct slob_page *sp, size_t size, int align,
 }
 
 /*
- * Allocate the specified size from the tracked slob block
+ * slob_best_alloc: allocate the specified size from the tracked slob block
  */
 static void *slob_best_alloc(struct slob_best_block *bb, size_t size, int align)
 {
@@ -405,41 +406,35 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 
 		prev = sp->list.prev;
 
-		/* Search this page */
 		slob_page_search(sp, size, align, &bb);
+
 		if (bb->fit == 0)
 			break;
-
-		/* Improve fragment distribution and reduce our average
-		 * search time by starting our next search here. (see
-		 * Knuth vol 1, sec 2.5, pg 449) */
-		if (prev != slob_list->prev &&
-				slob_list->next != prev->next)
-			list_move_tail(slob_list, prev->next);
-		break;
 	}
-	spin_unlock_irqrestore(&slob_lock, flags);
 
-	// Do allocation here (or maybe below new page allocation)
-
-	/* Not enough space: must allocate a new page */
-	if (!b) {
+	/* No fit found, allocate a new page */
+	if (bb.block == NULL) {
 		b = slob_new_pages(gfp & ~__GFP_ZERO, 0, node);
 		if (!b)
 			return NULL;
 		sp = slob_page(b);
 		set_slob_page(sp);
 
-		spin_lock_irqsave(&slob_lock, flags);
 		sp->units = SLOB_UNITS(PAGE_SIZE);
 		sp->free = b;
 		INIT_LIST_HEAD(&sp->list);
 		set_slob(b, SLOB_UNITS(PAGE_SIZE), b + SLOB_UNITS(PAGE_SIZE));
 		set_slob_page_free(sp, slob_list);
-		b = slob_page_alloc(sp, size, align);
 		BUG_ON(!b);
-		spin_unlock_irqrestore(&slob_lock, flags);
+
+		bb.block = b;
+		bb.page = sp;
 	}
+
+	b = slob_best_alloc(&bb, size, align);
+
+	spin_unlock_irqrestore(&slob_lock, flags);
+
 	if (unlikely((gfp & __GFP_ZERO) && b))
 		memset(b, 0, size);
 	return b;
