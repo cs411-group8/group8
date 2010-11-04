@@ -84,6 +84,11 @@ typedef s16 slobidx_t;
 typedef s32 slobidx_t;
 #endif
 
+//global vars to keep track of fragmentation stats--to be called by
+//sys_get_amt_claimed and sys_get_amt_free
+unsigned int amt_claimed = 0;
+unsigned int amt_used    = 0;
+
 struct slob_block {
 	slobidx_t units;
 };
@@ -350,7 +355,13 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 		prev = sp->list.prev;
 		b = slob_page_alloc(sp, size, align);
 		if (!b)
+		{
 			continue;
+		}
+		else   //added to keep track of fragmentation *g8
+		{
+			amt_used += size;
+		}
 
 		/* Improve fragment distribution and reduce our average
 		 * search time by starting our next search here. (see
@@ -366,7 +377,13 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 	if (!b) {
 		b = slob_new_pages(gfp & ~__GFP_ZERO, 0, node);
 		if (!b)
+		{
 			return NULL;
+		}
+		else   //added to keep track of fragmentation *G8 
+		{
+			amt_claimed += PAGE_SIZE;
+		}	
 		sp = slob_page(b);
 		set_slob_page(sp);
 
@@ -697,3 +714,26 @@ void __init kmem_cache_init_late(void)
 {
 	/* Nothing to do */
 }
+
+/*
+ * sys_get_slob_amt_claimed
+ *
+ * Returns the total ..something
+ */
+
+asmlinkage unsigned int sys_get_slob_amt_claimed(void)
+{
+	return amt_claimed;
+}
+/*
+ * sys_get_slob_amt_free
+ *
+ * Returns the total ..something
+ */
+
+asmlinkage unsigned int sys_get_slob_amt_free(void)
+{
+	unsigned int amt_free = amt_claimed - amt_used;
+	return amt_free;
+}
+
