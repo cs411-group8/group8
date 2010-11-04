@@ -117,6 +117,7 @@ static inline void struct_slob_page_wrong_size(void)
 struct slob_best_block {
 	struct slob_page *page;
 	slob_t *block;
+	slob_t *prev;
 	int fit;
 };
 
@@ -126,6 +127,7 @@ static void init_best_block(struct slob_best_block *bb)
 {
 	bb->page = NULL;
 	bb->block = NULL;
+	bb->prev = NULL;
 	bb->fit = -1;
 }
 
@@ -282,13 +284,13 @@ static void slob_free_pages(void *b, int order)
 }
 
 /*
- * Allocate a slob block within a given slob_page sp.
+ * Search a slob_page for a better fit block than the one tracked in bb
  */
-static void slob_page_alloc(struct slob_page *sp, size_t size, int align,
+static void slob_page_search(struct slob_page *sp, size_t size, int align,
 						  struct slob_best_block *bb)
 {
 	slob_t *prev, *cur, *aligned = NULL;
-	int delta = 0, units = SLOB_UNITS(size);
+	int delta = 0, fit, units = SLOB_UNITS(size);
 
 	for (prev = NULL, cur = sp->free; ; prev = cur, cur = slob_next(cur)) {
 		slobidx_t avail = slob_units(cur);
@@ -297,39 +299,20 @@ static void slob_page_alloc(struct slob_page *sp, size_t size, int align,
 			aligned = (slob_t *)ALIGN((unsigned long)cur, align);
 			delta = aligned - cur;
 		}
-		if (avail >= units + delta) { /* room enough? */
-			slob_t *next;
 
-			if (delta) { /* need to fragment head to align? */
-				next = slob_next(cur);
-				set_slob(aligned, avail - delta, next);
-				set_slob(cur, delta, aligned);
-				prev = cur;
-				cur = aligned;
-				avail = slob_units(cur);
-			}
+		fit = avail - (units + delta);
 
-			next = slob_next(cur);
-			if (avail == units) { /* exact fit? unlink. */
-				if (prev)
-					set_slob(prev, slob_units(prev), next);
-				else
-					sp->free = next;
-			} else { /* fragment */
-				if (prev)
-					set_slob(prev, slob_units(prev), cur + units);
-				else
-					sp->free = cur + units;
-				set_slob(cur + units, avail - units, next);
-			}
-
-			sp->units -= units;
-			if (!sp->units)
-				clear_slob_page_free(sp);
-			return cur;
+		/* If this is a better fit, update the tracker */
+		if (fit >= 0 && fit < bb->fit) {
+			bb->fit = fit;
+			bb->page = sp;
+			bb->block = cur;
+			bb->prev = prev;
 		}
-		if (slob_last(cur))
-			return NULL;
+
+		/* Return after the last block or on a perfect fit */
+		if (slob_last(cur) || bb->fit == 0)
+			return;
 	}
 }
 
