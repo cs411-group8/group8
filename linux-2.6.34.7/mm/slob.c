@@ -300,10 +300,10 @@ static void slob_page_search(struct slob_page *sp, size_t size, int align,
 			delta = aligned - cur;
 		}
 
-		fit = avail - (units + delta);
+		fit = avail - units;
 
 		/* If this is a better fit, update the tracker */
-		if (fit >= 0 && fit < bb->fit) {
+		if ((avail >= units + delta) && fit < bb->fit) {
 			bb->fit = fit;
 			bb->page = sp;
 			bb->block = cur;
