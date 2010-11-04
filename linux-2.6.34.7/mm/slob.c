@@ -413,7 +413,7 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 	}
 
 	/* No fit found, allocate a new page */
-	if (bb.block == NULL) {
+	if (!bb.block) {
 		b = slob_new_pages(gfp & ~__GFP_ZERO, 0, node);
 		if (!b)
 			return NULL;
