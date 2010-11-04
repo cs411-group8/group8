@@ -317,6 +317,57 @@ static void slob_page_search(struct slob_page *sp, size_t size, int align,
 }
 
 /*
+ * Allocate the specified size from the tracked slob block
+ */
+static void *slob_best_alloc(struct slob_best_block *bb, size_t size, int align)
+{
+	slob_t *cur = bb->block;
+	slob_t *prev = bb->prev;
+	slob_t *next = NULL, *aligned = NULL;
+	int delta = 0, units = SLOB_UNITS(size);
+	slobidx_t avail = slob_units(bb->block);
+
+	if (align) {
+		aligned = (slob_t *)ALIGN((unsigned long)cur, align);
+		delta = aligned - cur;
+	}
+
+	/* Need to fragment head to align? */
+	if (delta) {
+		next = slob_next(cur);
+		set_slob(aligned, avail - delta, next);
+		set_slob(cur, delta, aligned);
+		prev = cur;
+		cur = aligned;
+		avail = slob_units(cur);
+	}
+
+	next = slob_next(cur);
+
+	if (avail == units) { /* exact fit? unlink. */
+		if (prev)
+			set_slob(prev, slob_units(prev), next);
+		else
+			bb->page->free = next;
+	} else { /* fragment */
+		if (prev)
+			set_slob(prev, slob_units(prev), cur + units);
+		else
+			bb->page->free = cur + units;
+		set_slob(cur + units, avail - units, next);
+	}
+
+	/* Update the amount of used space in the page */
+	bb->page->units -= units;
+
+	/* If the page is full, make it unavailable */
+	if (!bb->page->units)
+		clear_slob_page_free(bb->page);
+
+	return cur;
+}
+
+/*
  * slob_alloc: entry point into the slob allocator.
  */
 static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
