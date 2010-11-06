@@ -408,7 +408,7 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 
 		slob_page_search(sp, size, align, &bb);
 
-		if (bb->fit == 0)
+		if (bb.fit == 0)
 			break;
 	}
 
