@@ -390,9 +390,4 @@
 #endif
 
 #endif /* __KERNEL__ */
-
-//project3 changes-aaron
-#define __NR_get_slob_amt_claimed 339
-#define __NR_get_slob_amt_free 340
-
 #endif /* _ASM_X86_UNISTD_32_H */
