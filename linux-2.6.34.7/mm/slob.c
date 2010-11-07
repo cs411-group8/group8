@@ -84,6 +84,11 @@ typedef s16 slobidx_t;
 typedef s32 slobidx_t;
 #endif
 
+//global vars to keep track of fragmentation stats--to be called by
+//sys_get_amt_claimed and sys_get_amt_free
+unsigned int amt_claimed = 0;
+unsigned int amt_used    = 0;
+
 struct slob_block {
 	slobidx_t units;
 };
@@ -136,6 +141,7 @@ static void init_best_block(struct slob_best_block *bb)
  */
 static inline void free_slob_page(struct slob_page *sp)
 {
+	amt_claimed -= PAGE_SIZE;
 	reset_page_mapcount(&sp->page);
 	sp->page.mapping = NULL;
 }
@@ -365,6 +371,8 @@ static void *slob_best_alloc(struct slob_best_block *bb, size_t size, int align)
 	if (!bb->page->units)
 		clear_slob_page_free(bb->page);
 
+	amt_used += size;
+
 	return cur;
 }
 
@@ -422,6 +430,8 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 			return NULL;
 
 		spin_lock_irqsave(&slob_lock, flags);
+		amt_claimed += PAGE_SIZE;
+
 		sp = slob_page(b);
 		set_slob_page(sp);
 
@@ -458,6 +468,8 @@ static void slob_free(void *block, int size)
 	if (unlikely(ZERO_OR_NULL_PTR(block)))
 		return;
 	BUG_ON(!size);
+
+	amt_used -= size;
 
 	sp = slob_page(block);
 	units = SLOB_UNITS(size);
@@ -757,3 +769,26 @@ void __init kmem_cache_init_late(void)
 {
 	/* Nothing to do */
 }
+
+/*
+ * sys_get_slob_amt_claimed
+ *
+ * Returns the total ..something
+ */
+
+asmlinkage unsigned int sys_get_slob_amt_claimed(void)
+{
+	return amt_claimed;
+}
+/*
+ * sys_get_slob_amt_free
+ *
+ * Returns the total ..something
+ */
+
+asmlinkage unsigned int sys_get_slob_amt_free(void)
+{
+	unsigned int amt_free = amt_claimed - amt_used;
+	return amt_free;
+}
+
