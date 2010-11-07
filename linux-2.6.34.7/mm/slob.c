@@ -120,6 +120,7 @@ static inline void struct_slob_page_wrong_size(void)
  */
 static inline void free_slob_page(struct slob_page *sp)
 {
+	amt_claimed -= PAGE_SIZE;
 	reset_page_mapcount(&sp->page);
 	sp->page.mapping = NULL;
 }
@@ -275,6 +276,8 @@ static void *slob_page_alloc(struct slob_page *sp, size_t size, int align)
 	slob_t *prev, *cur, *aligned = NULL;
 	int delta = 0, units = SLOB_UNITS(size);
 
+	amt_used += size;
+
 	for (prev = NULL, cur = sp->free; ; prev = cur, cur = slob_next(cur)) {
 		slobidx_t avail = slob_units(cur);
 
@@ -415,6 +418,8 @@ static void slob_free(void *block, int size)
 	if (unlikely(ZERO_OR_NULL_PTR(block)))
 		return;
 	BUG_ON(!size);
+
+	amt_used -= size;
 
 	sp = slob_page(block);
 	units = SLOB_UNITS(size);
