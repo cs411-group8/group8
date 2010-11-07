@@ -128,7 +128,7 @@ static void init_best_block(struct slob_best_block *bb)
 	bb->page = NULL;
 	bb->block = NULL;
 	bb->prev = NULL;
-	bb->fit = -1;
+	bb->fit = PAGE_SIZE + 1;
 }
 
 /*
@@ -414,9 +414,14 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 
 	/* No fit found, allocate a new page */
 	if (!bb.block) {
+		/* The lock has to be released to allocate pages */
+		spin_unlock_irqrestore(&slob_lock, flags);
+
 		b = slob_new_pages(gfp & ~__GFP_ZERO, 0, node);
 		if (!b)
 			return NULL;
+
+		spin_lock_irqsave(&slob_lock, flags);
 		sp = slob_page(b);
 		set_slob_page(sp);
 
@@ -425,7 +430,6 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 		INIT_LIST_HEAD(&sp->list);
 		set_slob(b, SLOB_UNITS(PAGE_SIZE), b + SLOB_UNITS(PAGE_SIZE));
 		set_slob_page_free(sp, slob_list);
-		BUG_ON(!b);
 
 		bb.block = b;
 		bb.page = sp;
@@ -437,6 +441,7 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 
 	if (unlikely((gfp & __GFP_ZERO) && b))
 		memset(b, 0, size);
+
 	return b;
 }
 
