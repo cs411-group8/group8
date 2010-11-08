@@ -2,12 +2,12 @@
  * Group 8
  * Russell Haering, Brad Nelson, Aaron Breault, Scott Rosenbalm
  * Description:
- * The SLOB allocator has been modified to use a best-fit algorithm 
+ * The SLOB allocator has been modified to use a best-fit algorithm
  * when allocating memory, rather that a first-fit algorithm.
  * For this implementation, the functions slob_alloc and slob_page_alloc
  * were modified to search through all free blocks of memory, looking
- * for the best-fit. 
- * In addition, two syscalls have been implemented to report the 
+ * for the best-fit.
+ * In addition, two syscalls have been implemented to report the
  * amount of memory allocated, and the amount of that memory which
  * is free (internal fragmentation).
 */
