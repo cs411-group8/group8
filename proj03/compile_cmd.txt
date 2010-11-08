@@ -1,0 +1,2 @@
+gcc -I../linux-2.6.34.7/include -o proj03_test proj03_test.c
+
