@@ -98,10 +98,9 @@ typedef s16 slobidx_t;
 typedef s32 slobidx_t;
 #endif
 
-//global vars to keep track of fragmentation stats--to be called by
-//sys_get_amt_claimed and sys_get_amt_free
+/* Track memory use stats for use in measuring fragmentation */
 unsigned int amt_claimed = 0;
-unsigned int amt_used    = 0;
+unsigned int amt_used = 0;
 
 struct slob_block {
 	slobidx_t units;
@@ -728,17 +727,16 @@ void __init kmem_cache_init_late(void)
  *
  * Returns the total bytes of memory claimed.
  */
-
 asmlinkage unsigned int sys_get_slob_amt_claimed(void)
 {
 	return amt_claimed;
 }
+
 /*
  * sys_get_slob_amt_free
  *
  * Returns the memory bytes that have been claimed, but are not used.
  */
-
 asmlinkage unsigned int sys_get_slob_amt_free(void)
 {
 	return amt_claimed - amt_used;
