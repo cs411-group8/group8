@@ -1,3 +1,17 @@
+/* CS411 Project 3 11/7/2010
+ * Group 8
+ * Russell Haering, Brad Nelson, Aaron Breault, Scott Rosenbalm
+ * Description:
+ * The SLOB allocator has been modified to use a best-fit algorithm 
+ * when allocating memory, rather that a first-fit algorithm.
+ * For this implementation, the functions slob_alloc and slob_page_alloc
+ * were modified to search through all free blocks of memory, looking
+ * for the best-fit. 
+ * In addition, two syscalls have been implemented to report the 
+ * amount of memory allocated, and the amount of that memory which
+ * is free (internal fragmentation).
+*/
+
 /*
  * SLOB Allocator: Simple List Of Blocks
  *
@@ -84,10 +98,9 @@ typedef s16 slobidx_t;
 typedef s32 slobidx_t;
 #endif
 
-//global vars to keep track of fragmentation stats--to be called by
-//sys_get_amt_claimed and sys_get_amt_free
+/* Track memory use stats for use in measuring fragmentation */
 unsigned int amt_claimed = 0;
-unsigned int amt_used    = 0;
+unsigned int amt_used = 0;
 
 struct slob_block {
 	slobidx_t units;
@@ -773,22 +786,20 @@ void __init kmem_cache_init_late(void)
 /*
  * sys_get_slob_amt_claimed
  *
- * Returns the total ..something
+ * Returns the total bytes of memory claimed.
  */
-
 asmlinkage unsigned int sys_get_slob_amt_claimed(void)
 {
 	return amt_claimed;
 }
+
 /*
  * sys_get_slob_amt_free
  *
- * Returns the total ..something
+ * Returns the memory bytes that have been claimed, but are not used.
  */
-
 asmlinkage unsigned int sys_get_slob_amt_free(void)
 {
-	unsigned int amt_free = amt_claimed - amt_used;
-	return amt_free;
+	return amt_claimed - amt_used;
 }
 

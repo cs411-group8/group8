@@ -1,0 +1,33 @@
+Readme for the proj03_test program.
+
+To compile the proj03_test program, simply invoke gcc on it:
+
+> gcc proj03_test.c -o proj03_test
+
+To use the program as to test the validity of the best-fit slob allocation,
+use the program against both the best-fit slob allocator and the first-fit
+slob allocator.  Run the program as soon as the kernel boots to maintain similar
+comparisons.
+
+When we ran the test program against the first-fit slob allocator, we recorded
+the following fragmentation results:
+
+Slob_amt_claimed: 2969600
+Slob_amt_free: 236668
+
+Which is effectively a ratio of approximately 0.079, or 7.9% fragmentation.
+
+When we ran the test program against the best-fit slob allocator, we recorded
+the following fragmentation results:
+
+Slob_amt_claimed: 2867200
+Slob_amt_free: 163576
+
+Which is effectively a ratio of approximately 0.057, or 5.7% fragmentation.
+
+Thus, it can be shown that the best-fit slob allocator has approximately 28%
+better fragmentation performance than the first-fit slob allocator.
+
+
+
+
