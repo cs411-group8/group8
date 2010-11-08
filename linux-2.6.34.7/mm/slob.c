@@ -276,7 +276,6 @@ static void *slob_page_alloc(struct slob_page *sp, size_t size, int align)
 	slob_t *prev, *cur, *aligned = NULL;
 	int delta = 0, units = SLOB_UNITS(size);
 
-	amt_used += size;
 
 	for (prev = NULL, cur = sp->free; ; prev = cur, cur = slob_next(cur)) {
 		slobidx_t avail = slob_units(cur);
@@ -314,6 +313,7 @@ static void *slob_page_alloc(struct slob_page *sp, size_t size, int align)
 			sp->units -= units;
 			if (!sp->units)
 				clear_slob_page_free(sp);
+			amt_used += size;
 			return cur;
 		}
 		if (slob_last(cur))
@@ -358,13 +358,7 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 		prev = sp->list.prev;
 		b = slob_page_alloc(sp, size, align);
 		if (!b)
-		{
 			continue;
-		}
-		else   //added to keep track of fragmentation *g8
-		{
-			amt_used += size;
-		}
 
 		/* Improve fragment distribution and reduce our average
 		 * search time by starting our next search here. (see
@@ -380,13 +374,8 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align, int node)
 	if (!b) {
 		b = slob_new_pages(gfp & ~__GFP_ZERO, 0, node);
 		if (!b)
-		{
 			return NULL;
-		}
-		else   //added to keep track of fragmentation *G8 
-		{
-			amt_claimed += PAGE_SIZE;
-		}	
+		amt_claimed += PAGE_SIZE;
 		sp = slob_page(b);
 		set_slob_page(sp);
 
@@ -738,7 +727,6 @@ asmlinkage unsigned int sys_get_slob_amt_claimed(void)
 
 asmlinkage unsigned int sys_get_slob_amt_free(void)
 {
-	unsigned int amt_free = amt_claimed - amt_used;
-	return amt_free;
+	return amt_claimed - amt_used;
 }
 
