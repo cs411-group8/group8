@@ -33,6 +33,15 @@ config IOSCHED_CFQ
 
 	  This is the default I/O scheduler.
 
+config IOSCHED_LOOK
+	tristate "LOOK I/O scheduler"
+	default y
+	---help---
+	  The LOOK I/O scheduler schedules I/O operations in the order of their
+	  locations on the disk. Operations are scheduled such that the disk
+	  head can traverse from low to high head locations, performing
+	  operations as it moves in both directions.
+
 config CFQ_GROUP_IOSCHED
 	bool "CFQ Group Scheduling support"
 	depends on IOSCHED_CFQ && CGROUPS
@@ -64,6 +73,9 @@ choice
 
 	config DEFAULT_NOOP
 		bool "No-op"
+
+	config DEFAULT_LOOK
+		bool "LOOK" if IOSCHED_LOOK=y
 
 endchoice
 
