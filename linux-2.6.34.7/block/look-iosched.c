@@ -23,8 +23,15 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 
+enum look_directions {
+	LOOK_DOWN,
+	LOOK_UP
+}; 
+
 struct look_data {
 	struct list_head queue;
+	sector_t last_sector;
+	enum look_directions direction;
 };
 
 static void look_merged_requests(struct request_queue *q, struct request *rq,
@@ -89,6 +96,8 @@ static void *look_init_queue(struct request_queue *q)
 	if (!nd)
 		return NULL;
 	INIT_LIST_HEAD(&nd->queue);
+	nd->last_sector = 0;
+	nd->directions = LOOK_UP;
 	return nd;
 }
 
