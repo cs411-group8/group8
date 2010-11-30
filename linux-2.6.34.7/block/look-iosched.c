@@ -74,14 +74,14 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 				list_add_tail(&rq->queuelist, &curr->queuelist);
 				return;
 			}
-			if (curr->queuelist.next == nd->queue) {
+			if (curr->queuelist.next == &nd->queue) {
 				list_add_tail(&rq->queuelist, &nd->queue);
 				return;
 			}
 			next = list_entry(curr->queuelist.next, struct request, queuelist);
 			if (blk_rq_pos(next) < nd->last_sector) {
 				list_add(&rq->queuelist, &curr->queuelist);
-				return
+				return;
 			}
 		}
 	} else {
@@ -90,7 +90,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 				list_add(&rq->queuelist, &curr->queuelist);
 				return;
 			}
-			if (curr->queuelist.prev == nd->queue) {
+			if (curr->queuelist.prev == &nd->queue) {
 				list_add(&rq->queuelist, &nd->queue);
 				return;
 			}
@@ -139,7 +139,7 @@ static void *look_init_queue(struct request_queue *q)
 		return NULL;
 	INIT_LIST_HEAD(&nd->queue);
 	nd->last_sector = 0;
-	nd->directions = LOOK_UP;
+	nd->direction = LOOK_UP;
 	return nd;
 }
 
