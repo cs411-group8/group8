@@ -71,6 +71,8 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 			return;
 		}
 	}
+
+	list_add_tail(&rq->queuelist, &nd->queue);
 }
 
 static int look_queue_empty(struct request_queue *q)
