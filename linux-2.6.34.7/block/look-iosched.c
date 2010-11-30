@@ -14,7 +14,7 @@
 
 
 /*
- * elevator noop
+ * elevator look
  */
 #include <linux/blkdev.h>
 #include <linux/elevator.h>
@@ -23,19 +23,19 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 
-struct noop_data {
+struct look_data {
 	struct list_head queue;
 };
 
-static void noop_merged_requests(struct request_queue *q, struct request *rq,
+static void look_merged_requests(struct request_queue *q, struct request *rq,
 				 struct request *next)
 {
 	list_del_init(&next->queuelist);
 }
 
-static int noop_dispatch(struct request_queue *q, int force)
+static int look_dispatch(struct request_queue *q, int force)
 {
-	struct noop_data *nd = q->elevator->elevator_data;
+	struct look_data *nd = q->elevator->elevator_data;
 
 	if (!list_empty(&nd->queue)) {
 		struct request *rq;
@@ -47,24 +47,24 @@ static int noop_dispatch(struct request_queue *q, int force)
 	return 0;
 }
 
-static void noop_add_request(struct request_queue *q, struct request *rq)
+static void look_add_request(struct request_queue *q, struct request *rq)
 {
-	struct noop_data *nd = q->elevator->elevator_data;
+	struct look_data *nd = q->elevator->elevator_data;
 
 	list_add_tail(&rq->queuelist, &nd->queue);
 }
 
-static int noop_queue_empty(struct request_queue *q)
+static int look_queue_empty(struct request_queue *q)
 {
-	struct noop_data *nd = q->elevator->elevator_data;
+	struct look_data *nd = q->elevator->elevator_data;
 
 	return list_empty(&nd->queue);
 }
 
 static struct request *
-noop_former_request(struct request_queue *q, struct request *rq)
+look_former_request(struct request_queue *q, struct request *rq)
 {
-	struct noop_data *nd = q->elevator->elevator_data;
+	struct look_data *nd = q->elevator->elevator_data;
 
 	if (rq->queuelist.prev == &nd->queue)
 		return NULL;
@@ -72,18 +72,18 @@ noop_former_request(struct request_queue *q, struct request *rq)
 }
 
 static struct request *
-noop_latter_request(struct request_queue *q, struct request *rq)
+look_latter_request(struct request_queue *q, struct request *rq)
 {
-	struct noop_data *nd = q->elevator->elevator_data;
+	struct look_data *nd = q->elevator->elevator_data;
 
 	if (rq->queuelist.next == &nd->queue)
 		return NULL;
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
 
-static void *noop_init_queue(struct request_queue *q)
+static void *look_init_queue(struct request_queue *q)
 {
-	struct noop_data *nd;
+	struct look_data *nd;
 
 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
 	if (!nd)
@@ -92,43 +92,43 @@ static void *noop_init_queue(struct request_queue *q)
 	return nd;
 }
 
-static void noop_exit_queue(struct elevator_queue *e)
+static void look_exit_queue(struct elevator_queue *e)
 {
-	struct noop_data *nd = e->elevator_data;
+	struct look_data *nd = e->elevator_data;
 
 	BUG_ON(!list_empty(&nd->queue));
 	kfree(nd);
 }
 
-static struct elevator_type elevator_noop = {
+static struct elevator_type elevator_look = {
 	.ops = {
-		.elevator_merge_req_fn		= noop_merged_requests,
-		.elevator_dispatch_fn		= noop_dispatch,
-		.elevator_add_req_fn		= noop_add_request,
-		.elevator_queue_empty_fn	= noop_queue_empty,
-		.elevator_former_req_fn		= noop_former_request,
-		.elevator_latter_req_fn		= noop_latter_request,
-		.elevator_init_fn		= noop_init_queue,
-		.elevator_exit_fn		= noop_exit_queue,
+		.elevator_merge_req_fn		= look_merged_requests,
+		.elevator_dispatch_fn		= look_dispatch,
+		.elevator_add_req_fn		= look_add_request,
+		.elevator_queue_empty_fn	= look_queue_empty,
+		.elevator_former_req_fn		= look_former_request,
+		.elevator_latter_req_fn		= look_latter_request,
+		.elevator_init_fn		= look_init_queue,
+		.elevator_exit_fn		= look_exit_queue,
 	},
-	.elevator_name = "noop",
+	.elevator_name = "look",
 	.elevator_owner = THIS_MODULE,
 };
 
-static int __init noop_init(void)
+static int __init look_init(void)
 {
-	elv_register(&elevator_noop);
+	elv_register(&elevator_look);
 
 	return 0;
 }
 
-static void __exit noop_exit(void)
+static void __exit look_exit(void)
 {
-	elv_unregister(&elevator_noop);
+	elv_unregister(&elevator_look);
 }
 
-module_init(noop_init);
-module_exit(noop_exit);
+module_init(look_init);
+module_exit(look_exit);
 
 
 MODULE_AUTHOR("Jens Axboe");
