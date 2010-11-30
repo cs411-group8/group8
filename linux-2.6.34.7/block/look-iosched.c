@@ -26,7 +26,7 @@
 enum look_directions {
 	LOOK_DOWN,
 	LOOK_UP
-}; 
+};
 
 struct look_data {
 	struct list_head queue;
@@ -57,8 +57,20 @@ static int look_dispatch(struct request_queue *q, int force)
 static void look_add_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *nd = q->elevator->elevator_data;
+	struct request *curr;
+	sector_t rqs = blk_rq_pos(rq);
 
-	list_add_tail(&rq->queuelist, &nd->queue);
+	/*
+	 * Iterate through list held in the nd 'thing' called queue with list head
+	 * queuelist, which this function finds.  curr holds the current iteration
+	 * of the list. (list is sorted lowest to highest)
+	 */
+	list_for_each_entry(curr, &nd->queue, queuelist){
+		if (rqs < blk_rq_pos(curr)){
+			list_add_tail(&rq->queuelist, &curr->queuelist);
+			return;
+		}
+	}
 }
 
 static int look_queue_empty(struct request_queue *q)
