@@ -44,6 +44,9 @@ static int look_dispatch(struct request_queue *q, int force)
 {
 	struct look_data *nd = q->elevator->elevator_data;
 
+	
+	
+	
 	if (!list_empty(&nd->queue)) {
 		struct request *rq;
 		rq = list_entry(nd->queue.next, struct request, queuelist);
@@ -57,22 +60,47 @@ static int look_dispatch(struct request_queue *q, int force)
 static void look_add_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *nd = q->elevator->elevator_data;
-	struct request *curr;
+	struct request *curr, *next;
 	sector_t rqs = blk_rq_pos(rq);
 
-	/*
-	 * Iterate through list held in the nd 'thing' called queue with list head
-	 * queuelist, which this function finds.  curr holds the current iteration
-	 * of the list. (list is sorted lowest to highest)
-	 */
-	list_for_each_entry(curr, &nd->queue, queuelist){
-		if (rqs < blk_rq_pos(curr)){
-			list_add_tail(&rq->queuelist, &curr->queuelist);
-			return;
+	if (rqs > nd->last_sector){ //search up
+		/*
+		 * Iterate through list held in the nd 'thing' called queue with list head
+		 * queuelist, which this function finds.  curr holds the current iteration
+		 * of the list. (list is sorted lowest to highest)
+		 */
+		list_for_each_entry(curr, &nd->queue, queuelist) {
+			if (rqs < blk_rq_pos(curr)) {
+				list_add_tail(&rq->queuelist, &curr->queuelist);
+				return;
+			}
+			if (curr->queuelist.next == nd->queue) {
+				list_add_tail(&rq->queuelist, &nd->queue);
+				return;
+			}
+			next = list_entry(curr->queuelist.next, struct request, queuelist);
+			if (blk_rq_pos(next) < nd->last_sector) {
+				list_add(&rq->queuelist, &curr->queuelist);
+				return
+			}
+		}
+	} else {
+		list_for_each_entry_reverse(curr, &nd->queue, queuelist) {
+			if (rqs > blk_rq_pos(curr)) {
+				list_add(&rq->queuelist, &curr->queuelist);
+				return;
+			}
+			if (curr->queuelist.prev == nd->queue) {
+				list_add(&rq->queuelist, &nd->queue);
+				return;
+			}
+			next = list_entry(curr->queuelist.prev, struct request, queuelist);
+			if (blk_rq_pos(next) > nd->last_sector) {
+				list_add_tail(&rq->queuelist, &curr->queuelist);
+				return;
+			}
 		}
 	}
-
-	list_add_tail(&rq->queuelist, &nd->queue);
 }
 
 static int look_queue_empty(struct request_queue *q)
