@@ -138,7 +138,7 @@ look_former_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *nd = q->elevator->elevator_data;
 
-	if (rq->queuelist.prev == &nd->queue)
+	if (list_empty(&nd->queue))
 		return NULL;
 	return list_entry(rq->queuelist.prev, struct request, queuelist);
 }
@@ -148,7 +148,7 @@ look_latter_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *nd = q->elevator->elevator_data;
 
-	if (rq->queuelist.next == &nd->queue)
+	if (list_empty(&nd->queue))
 		return NULL;
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
