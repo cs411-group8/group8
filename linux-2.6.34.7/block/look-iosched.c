@@ -63,37 +63,37 @@ static void look_merged_requests(struct request_queue *q, struct request *rq,
  */
 static int look_dispatch(struct request_queue *q, int force)
 {
-	struct look_data *nd = q->elevator->elevator_data;
+	struct look_data *ld = q->elevator->elevator_data;
 	struct request *rq;
 
-	if (list_empty(&nd->queue))
+	if (list_empty(&ld->queue))
 		return 0;
 
-	if (nd->direction == LOOK_UP) { /* going UP! */
-		rq = list_entry(nd->queue.next, struct request, queuelist);
+	if (ld->direction == LOOK_UP) { /* going UP! */
+		rq = list_entry(ld->queue.next, struct request, queuelist);
 
-		if (blk_rq_pos(rq) >= nd->last_sector) { /* Is this the next block? */
-			nd->last_sector = blk_rq_pos(rq);
+		if (blk_rq_pos(rq) >= ld->last_sector) { /* Is this the next block? */
+			ld->last_sector = blk_rq_pos(rq);
 			list_del_init(&rq->queuelist);
 			elv_dispatch_add_tail(q, rq);
 		} else { /* There are no more blocks in the UP direction */
-			nd->direction = LOOK_DOWN;
-			rq = list_entry(nd->queue.prev, struct request, queuelist);
-			nd->last_sector = blk_rq_pos(rq);
+			ld->direction = LOOK_DOWN;
+			rq = list_entry(ld->queue.prev, struct request, queuelist);
+			ld->last_sector = blk_rq_pos(rq);
 			list_del_init(&rq->queuelist);
 			elv_dispatch_add_tail(q, rq);
 		}
 	} else { /* going DOWN! */
-		rq = list_entry(nd->queue.prev, struct request, queuelist);
+		rq = list_entry(ld->queue.prev, struct request, queuelist);
 
-		if (blk_rq_pos(rq) <= nd->last_sector) { /* Is this the next block? */
-			nd->last_sector = blk_rq_pos(rq);
+		if (blk_rq_pos(rq) <= ld->last_sector) { /* Is this the next block? */
+			ld->last_sector = blk_rq_pos(rq);
 			list_del_init(&rq->queuelist);
 			elv_dispatch_add_tail(q, rq);
 		} else { /* There are no more blocks in the DOWN direction */
-			nd->direction = LOOK_UP;
-			rq = list_entry(nd->queue.next, struct request, queuelist);
-			nd->last_sector = blk_rq_pos(rq);
+			ld->direction = LOOK_UP;
+			rq = list_entry(ld->queue.next, struct request, queuelist);
+			ld->last_sector = blk_rq_pos(rq);
 			list_del_init(&rq->queuelist);
 			elv_dispatch_add_tail(q, rq);
 		}
@@ -111,49 +111,49 @@ static int look_dispatch(struct request_queue *q, int force)
  */
 static void look_add_request(struct request_queue *q, struct request *rq)
 {
-	struct look_data *nd = q->elevator->elevator_data;
+	struct look_data *ld = q->elevator->elevator_data;
 	struct request *curr, *next;
 	sector_t rqs = blk_rq_pos(rq);
 
 	/* Special case because the loops don't work on an empty queue */
-	if (list_empty(&nd->queue)) {
-		list_add(&rq->queuelist, &nd->queue);
+	if (list_empty(&ld->queue)) {
+		list_add(&rq->queuelist, &ld->queue);
 		return;
 	}
 
-	if (rqs > nd->last_sector){ /* Search UP */
-		list_for_each_entry(curr, &nd->queue, queuelist) {
+	if (rqs > ld->last_sector){ /* Search UP */
+		list_for_each_entry(curr, &ld->queue, queuelist) {
 			if (rqs < blk_rq_pos(curr)) {
 				list_add_tail(&rq->queuelist, &curr->queuelist);
 				log_rq_add(rq);
 				return;
 			}
-			if (curr->queuelist.next == &nd->queue) {
-				list_add_tail(&rq->queuelist, &nd->queue);
+			if (curr->queuelist.next == &ld->queue) {
+				list_add_tail(&rq->queuelist, &ld->queue);
 				log_rq_add(rq);
 				return;
 			}
 			next = list_entry(curr->queuelist.next, struct request, queuelist);
-			if (blk_rq_pos(next) < nd->last_sector) {
+			if (blk_rq_pos(next) < ld->last_sector) {
 				list_add(&rq->queuelist, &curr->queuelist);
 				log_rq_add(rq);
 				return;
 			}
 		}
 	} else { /* Search DOWN */
-		list_for_each_entry_reverse(curr, &nd->queue, queuelist) {
+		list_for_each_entry_reverse(curr, &ld->queue, queuelist) {
 			if (rqs > blk_rq_pos(curr)) {
 				list_add(&rq->queuelist, &curr->queuelist);
 				log_rq_add(rq);
 				return;
 			}
-			if (curr->queuelist.prev == &nd->queue) {
-				list_add(&rq->queuelist, &nd->queue);
+			if (curr->queuelist.prev == &ld->queue) {
+				list_add(&rq->queuelist, &ld->queue);
 				log_rq_add(rq);
 				return;
 			}
 			next = list_entry(curr->queuelist.prev, struct request, queuelist);
-			if (blk_rq_pos(next) > nd->last_sector) {
+			if (blk_rq_pos(next) > ld->last_sector) {
 				list_add_tail(&rq->queuelist, &curr->queuelist);
 				log_rq_add(rq);
 				return;
@@ -166,18 +166,18 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 /* Check whether the queue is empty */
 static int look_queue_empty(struct request_queue *q)
 {
-	struct look_data *nd = q->elevator->elevator_data;
+	struct look_data *ld = q->elevator->elevator_data;
 
-	return list_empty(&nd->queue);
+	return list_empty(&ld->queue);
 }
 
 /* Get the request immediately before this one in the queue */
 static struct request *
 look_former_request(struct request_queue *q, struct request *rq)
 {
-	struct look_data *nd = q->elevator->elevator_data;
+	struct look_data *ld = q->elevator->elevator_data;
 
-	if (list_empty(&nd->queue))
+	if (list_empty(&ld->queue))
 		return NULL;
 	return list_entry(rq->queuelist.prev, struct request, queuelist);
 }
@@ -186,9 +186,9 @@ look_former_request(struct request_queue *q, struct request *rq)
 static struct request *
 look_latter_request(struct request_queue *q, struct request *rq)
 {
-	struct look_data *nd = q->elevator->elevator_data;
+	struct look_data *ld = q->elevator->elevator_data;
 
-	if (list_empty(&nd->queue))
+	if (list_empty(&ld->queue))
 		return NULL;
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
@@ -196,24 +196,24 @@ look_latter_request(struct request_queue *q, struct request *rq)
 /* Initialize the look_data structure and queue */
 static void *look_init_queue(struct request_queue *q)
 {
-	struct look_data *nd;
+	struct look_data *ld;
 
-	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
-	if (!nd)
+	ld = kmalloc_node(sizeof(*ld), GFP_KERNEL, q->node);
+	if (!ld)
 		return NULL;
-	INIT_LIST_HEAD(&nd->queue);
-	nd->last_sector = 0;
-	nd->direction = LOOK_UP;
-	return nd;
+	INIT_LIST_HEAD(&ld->queue);
+	ld->last_sector = 0;
+	ld->direction = LOOK_UP;
+	return ld;
 }
 
 /* Free the look_data structure */
 static void look_exit_queue(struct elevator_queue *e)
 {
-	struct look_data *nd = e->elevator_data;
+	struct look_data *ld = e->elevator_data;
 
-	BUG_ON(!list_empty(&nd->queue));
-	kfree(nd);
+	BUG_ON(!list_empty(&ld->queue));
+	kfree(ld);
 }
 
 static struct elevator_type elevator_look = {
