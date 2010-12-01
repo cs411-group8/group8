@@ -96,12 +96,13 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 	struct request *curr, *next;
 	sector_t rqs = blk_rq_pos(rq);
 
-	if (rqs > nd->last_sector){ //search up
-		/*
-		 * Iterate through list held in the nd 'thing' called queue with list head
-		 * queuelist, which this function finds.  curr holds the current iteration
-		 * of the list. (list is sorted lowest to highest)
-		 */
+	/* Special case because the loops don't work on an empty queue */
+	if (list_empty(&nd->queue)) {
+		list_add(&rq->queuelist, &nd->queue);
+		return;
+	}
+
+	if (rqs > nd->last_sector){ /* Search UP */
 		list_for_each_entry(curr, &nd->queue, queuelist) {
 			if (rqs < blk_rq_pos(curr)) {
 				list_add_tail(&rq->queuelist, &curr->queuelist);
@@ -123,7 +124,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 				return;
 			}
 		}
-	} else {
+	} else { /* Search DOWN */
 		list_for_each_entry_reverse(curr, &nd->queue, queuelist) {
 			if (rqs > blk_rq_pos(curr)) {
 				list_add(&rq->queuelist, &curr->queuelist);
