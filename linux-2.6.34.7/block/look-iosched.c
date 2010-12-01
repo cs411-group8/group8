@@ -161,7 +161,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 			}
 		}
 	}
-	printk("FAILED: < [LOOK] add %s %lu\n>  Has failed.", rq_dir_str(rq), upos(rq));
+	printk("FAILED: <[LOOK] add %s %lu>  Has failed.\n", rq_dir_str(rq), upos(rq));
 }
 
 /* Check whether the queue is empty */
