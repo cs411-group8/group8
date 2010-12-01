@@ -34,23 +34,33 @@
 #define log_rq_add(rq)	printk(RQ_ADD_FMT, rq_dir_str(rq), upos(rq))
 #define log_rq_dsp(rq)	printk(RQ_DSP_FMT, rq_dir_str(rq), upos(rq))
 
+/* Track the direction of travel of the disk head */
 enum look_directions {
 	LOOK_DOWN,
 	LOOK_UP
 };
 
+/* Tracks the current position of the disk head and its direction of travel,
+ * as well as keeping a reference to the LOOK queue */
 struct look_data {
 	struct list_head queue;
 	sector_t last_sector;
 	enum look_directions direction;
 };
 
+/* Remove a request from the queue when it is merged into another */
 static void look_merged_requests(struct request_queue *q, struct request *rq,
 				 struct request *next)
 {
 	list_del_init(&next->queuelist);
 }
 
+/*
+ * Dispatches one request (if any are available) by retrieving, in constant
+ * time the next request in the current direction of travel through the queue.
+ * If no requests remain in that direction, the direction is reversed and a
+ * request is dispatched in the new direction of travel.
+ */
 static int look_dispatch(struct request_queue *q, int force)
 {
 	struct look_data *nd = q->elevator->elevator_data;
@@ -93,6 +103,12 @@ static int look_dispatch(struct request_queue *q, int force)
 	return 1;
 }
 
+/*
+ * Adds a request to the LOOK queue in an average time of 1/2*N (where N is
+ * the number of pending requests). This first determines whether the request
+ * is above or below the list head, then traverses the queue in the appropriate
+ * direction to insert the request in sorted order.
+ */
 static void look_add_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *nd = q->elevator->elevator_data;
@@ -147,6 +163,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 	printk("FAILED: < [LOOK] add %s %lu\n>  Has failed.", rq_dir_str(rq), upos(rq));
 }
 
+/* Check whether the queue is empty */
 static int look_queue_empty(struct request_queue *q)
 {
 	struct look_data *nd = q->elevator->elevator_data;
@@ -154,6 +171,7 @@ static int look_queue_empty(struct request_queue *q)
 	return list_empty(&nd->queue);
 }
 
+/* Get the request immediately before this one in the queue */
 static struct request *
 look_former_request(struct request_queue *q, struct request *rq)
 {
@@ -164,6 +182,7 @@ look_former_request(struct request_queue *q, struct request *rq)
 	return list_entry(rq->queuelist.prev, struct request, queuelist);
 }
 
+/* Get the request immediately after this one in the queue */
 static struct request *
 look_latter_request(struct request_queue *q, struct request *rq)
 {
@@ -174,6 +193,7 @@ look_latter_request(struct request_queue *q, struct request *rq)
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
 
+/* Initialize the look_data structure and queue */
 static void *look_init_queue(struct request_queue *q)
 {
 	struct look_data *nd;
@@ -187,6 +207,7 @@ static void *look_init_queue(struct request_queue *q)
 	return nd;
 }
 
+/* Free the look_data structure */
 static void look_exit_queue(struct elevator_queue *e)
 {
 	struct look_data *nd = e->elevator_data;
