@@ -118,6 +118,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 	/* Special case because the loops don't work on an empty queue */
 	if (list_empty(&ld->queue)) {
 		list_add(&rq->queuelist, &ld->queue);
+		log_rq_add(rq);
 		return;
 	}
 
