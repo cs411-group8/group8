@@ -47,17 +47,16 @@ static int look_dispatch(struct request_queue *q, int force)
 
 	if (list_empty(&nd->queue))
 		return 0;
-	
+
 	if (nd->direction == LOOK_UP) { /* going UP! */
 		rq = list_entry(nd->queue.next, struct request, queuelist);
 
 		if (blk_rq_pos(rq) >= nd->last_sector) { /* Is this the next block? */
 			nd->last_sector = blk_rq_pos(rq);
 			list_del_init(&rq->queuelist);
-			elv_dispatch_add_tail(q, rq)
+			elv_dispatch_add_tail(q, rq);
 			printk("[LOOK] dsp %u %u", rq_data_dir(rq), blk_rq_pos(rq));
 			printk("Add Request if-1 has executed.\n");  /*used to check correctness of previous printk*/
-			}
 		} else { /* There are no more blocks in the UP direction */
 			nd->direction = LOOK_DOWN;
 			rq = list_entry(nd->queue.prev, struct request, queuelist);
