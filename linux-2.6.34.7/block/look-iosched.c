@@ -172,26 +172,52 @@ static int look_queue_empty(struct request_queue *q)
 	return list_empty(&ld->queue);
 }
 
-/* Get the request immediately before this one in the queue */
+/* Get the request immediately before this one in the queue, skipping the list
+ * head where applicable, and detecting 'wrap-around' */
 static struct request *
 look_former_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *ld = q->elevator->elevator_data;
+	struct request *fr = NULL;
 
-	if (list_empty(&ld->queue))
+	if (list_is_singular(&ld->queue))
 		return NULL;
-	return list_entry(rq->queuelist.prev, struct request, queuelist);
+
+	/* Get the former request, skipping the head */
+	if (unlikely(rq->queuelist.prev == &ld->queue))
+		fr = list_entry(ld->queue.prev, struct request, queuelist);
+	else
+		fr = list_entry(rq->queuelist.prev, struct request, queuelist);
+
+	/* Detect wrap-around */
+	if (unlikely(blk_rq_pos(rq) < blk_rq_pos(fr)))
+		return NULL;
+
+	return fr;
 }
 
-/* Get the request immediately after this one in the queue */
+/* Get the request immediately after this one in the queue, skipping the list
+ * head where applicable, and detecting 'wrap-around' */
 static struct request *
 look_latter_request(struct request_queue *q, struct request *rq)
 {
 	struct look_data *ld = q->elevator->elevator_data;
+	struct request *lr;
 
-	if (list_empty(&ld->queue))
+	if (list_is_singular(&ld->queue))
 		return NULL;
-	return list_entry(rq->queuelist.next, struct request, queuelist);
+
+	/* Get the latter request, skipping the head */
+	if (unlikely(rq->queuelist.next == &ld->queue))
+		lr = list_entry(ld->queue.next, struct request, queuelist);
+	else
+		lr = list_entry(rq->queuelist.next, struct request, queuelist);
+
+	/* Detect wrap-around */
+	if (unlikely(blk_rq_pos(rq) > blk_rq_pos(lr)))
+		return NULL;
+
+	return lr;
 }
 
 /* Initialize the look_data structure and queue */
