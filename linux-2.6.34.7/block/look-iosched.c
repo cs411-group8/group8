@@ -1,21 +1,24 @@
-///////////////////////////////////////////////
-//				Group 8
-//
-//				Project #4
-//
-//	Authors:	Scott Rosenbalm
-//				Aaron Breault
-//				Bradley Nelson
-//				Russell Haering
-//
-////////////////////////////////////////////////
-
-
-
-
 /*
- * elevator look
+ * LOOK IO Scheduler
+ *
+ * Group 8, CS411 Fall 2010
+ * Oregon State University
+ *
+ * Authors:	Scott Rosenbalm
+ *		Aaron Breault
+ *		Bradley Nelson
+ *		Russell Haering
+ *
+ * Schedules I/O requests "back and forth" across the disk according to the
+ * LOOK algorithm. Requests are stored in a circularly linked list, in which
+ * the list head element represents the disk head. This approach cuts the
+ * average time to add a request to 1/2*N (where N is the number of pending
+ * requests) and allows requests to be dispatched in constant time.
+ *
+ * Upon successful queueing and dispatching of requests, this implementation
+ * currently logs messages in keeping with the assignment requirements.
  */
+
 #include <linux/blkdev.h>
 #include <linux/elevator.h>
 #include <linux/bio.h>
@@ -143,6 +146,7 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 	}
 	printk("FAILED: < [LOOK] add %s %lu\n>  Has failed.", rq_dir_str(rq), upos(rq));
 }
+
 static int look_queue_empty(struct request_queue *q)
 {
 	struct look_data *nd = q->elevator->elevator_data;
