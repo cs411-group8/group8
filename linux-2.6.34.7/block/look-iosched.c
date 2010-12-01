@@ -43,18 +43,41 @@ static void look_merged_requests(struct request_queue *q, struct request *rq,
 static int look_dispatch(struct request_queue *q, int force)
 {
 	struct look_data *nd = q->elevator->elevator_data;
+	struct request *rq;
 
+	if (list_empty(&nd->queue))
+		return 0;
 	
-	
-	
-	if (!list_empty(&nd->queue)) {
-		struct request *rq;
+	if (nd->direction == LOOK_UP) { /* going UP! */
 		rq = list_entry(nd->queue.next, struct request, queuelist);
-		list_del_init(&rq->queuelist);
-		elv_dispatch_sort(q, rq);
-		return 1;
+
+		if (blk_rq_pos(rq) >= nd->last_sector) { /* Is this the next block? */
+			nd->last_sector = blk_rq_pos(rq);
+			list_del_init(&rq->queuelist);
+			elv_dispatch_add_tail(q, rq);
+		} else { /* There are no more blocks in the UP direction */
+			nd->direction = LOOK_DOWN;
+			rq = list_entry(nd->queue.prev, struct request, queuelist);
+			nd->last_sector = blk_rq_pos(rq);
+			list_del_init(&rq->queuelist);
+			elv_dispatch_add_tail(q, rq);
+		}
+	} else { /* going DOWN! */
+		rq = list_entry(nd->queue.prev, struct request, queuelist);
+
+		if (blk_rq_pos(rq) <= nd->last_sector) { /* Is this the next block? */
+			nd->last_sector = blk_rq_pos(rq);
+			list_del_init(&rq->queuelist);
+			elv_dispatch_add_tail(q, rq);
+		} else { /* There are no more blocks in the DOWN direction */
+			nd->direction = LOOK_UP;
+			rq = list_entry(nd->queue.next, struct request, queuelist);
+			nd->last_sector = blk_rq_pos(rq);
+			list_del_init(&rq->queuelist);
+			elv_dispatch_add_tail(q, rq);
+		}
 	}
-	return 0;
+	return 1;
 }
 
 static void look_add_request(struct request_queue *q, struct request *rq)
