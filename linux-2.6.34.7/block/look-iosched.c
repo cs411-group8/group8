@@ -24,8 +24,12 @@
 #include <linux/init.h>
 
 /* Useful for logging IO requests */
+#define RQ_ADD_FMT	"[LOOK] add %s %lu\n"
+#define RQ_DSP_FMT	"[LOOK] dsp %s %lu\n"
 #define upos(rq)	((unsigned long) blk_rq_pos(rq))
 #define rq_dir_str(rq)	(rq_data_dir(rq) == 0 ? "R" : "W")
+#define log_rq_add(rq)	printk(RQ_ADD_FMT, rq_dir_str(rq), upos(rq))
+#define log_rq_dsp(rq)	printk(RQ_DSP_FMT, rq_dir_str(rq), upos(rq))
 
 enum look_directions {
 	LOOK_DOWN,
@@ -82,7 +86,7 @@ static int look_dispatch(struct request_queue *q, int force)
 		}
 	}
 
-	printk("[LOOK] dsp %s %lu", rq_dir_str(rq), upos(rq));
+	log_rq_dsp(rq);
 	return 1;
 }
 
@@ -102,18 +106,18 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 		list_for_each_entry(curr, &nd->queue, queuelist) {
 			if (rqs < blk_rq_pos(curr)) {
 				list_add_tail(&rq->queuelist, &curr->queuelist);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 			if (curr->queuelist.next == &nd->queue) {
 				list_add_tail(&rq->queuelist, &nd->queue);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 			next = list_entry(curr->queuelist.next, struct request, queuelist);
 			if (blk_rq_pos(next) < nd->last_sector) {
 				list_add(&rq->queuelist, &curr->queuelist);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 		}
@@ -121,23 +125,23 @@ static void look_add_request(struct request_queue *q, struct request *rq)
 		list_for_each_entry_reverse(curr, &nd->queue, queuelist) {
 			if (rqs > blk_rq_pos(curr)) {
 				list_add(&rq->queuelist, &curr->queuelist);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 			if (curr->queuelist.prev == &nd->queue) {
 				list_add(&rq->queuelist, &nd->queue);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 			next = list_entry(curr->queuelist.prev, struct request, queuelist);
 			if (blk_rq_pos(next) > nd->last_sector) {
 				list_add_tail(&rq->queuelist, &curr->queuelist);
-				printk("[LOOK] add %s %lu", rq_dir_str(rq), upos(rq));
+				log_rq_add(rq);
 				return;
 			}
 		}
 	}
-	printk("FAILED: < [LOOK] add %s %lu>  Has failed.", rq_dir_str(rq), upos(rq));
+	printk("FAILED: < [LOOK] add %s %lu\n>  Has failed.", rq_dir_str(rq), upos(rq));
 }
 static int look_queue_empty(struct request_queue *q)
 {
