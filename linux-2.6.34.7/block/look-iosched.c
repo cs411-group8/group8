@@ -274,6 +274,6 @@ module_init(look_init);
 module_exit(look_exit);
 
 
-MODULE_AUTHOR("Jens Axboe");
+MODULE_AUTHOR("CS411 Group 8");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("No-op IO scheduler");
+MODULE_DESCRIPTION("LOOK IO scheduler");
