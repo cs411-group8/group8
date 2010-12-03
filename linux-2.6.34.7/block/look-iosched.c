@@ -17,6 +17,8 @@
  *
  * Upon successful queueing and dispatching of requests, this implementation
  * currently logs messages in keeping with the assignment requirements.
+ *
+ * This code is based on the noop scheduler from Linux 2.34.7
  */
 
 #include <linux/blkdev.h>
