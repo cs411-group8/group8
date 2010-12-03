@@ -12,7 +12,7 @@
 #define GB		* (1024 MB)
 
 // IO Profile
-#define FILE_SIZE	(128 MB)
+#define FILE_SIZE	(200 MB)
 #define CHUNK_SIZE 	(1 MB)
 #define FILE_COUNT	4
 
@@ -33,11 +33,11 @@ int main()
 		}
 
 		// Allocate space for each file, in hopes of getting contiguous sectors
-		if (lseek(fd[i], (FILE_SIZE - 1), SEEK_SET) < 0) {
+		if (lseek(fd[i], (FILE_SIZE - CHUNK_SIZE), SEEK_SET) < 0) {
 			perror("Error Seeking in File");
 			exit(1);
 		}
-		if (write(fd[i], '\0', 1) != 1) {
+		if (write(fd[i], buf, CHUNK_SIZE) != CHUNK_SIZE) {
 			perror ("Error Writing File");
 			exit(1);
 		}
@@ -54,7 +54,6 @@ int main()
 						perror("Error Writing File");
 						exit(1);
 					}
-					sched_yield();
 				}
 			}
 			else {
@@ -67,7 +66,6 @@ int main()
 						perror("Error Writing File");
 						exit(1);
 					}
-					sched_yield();
 				}
 			}
 			exit(0);
@@ -80,4 +78,4 @@ int main()
 	}
 
 	printf("All Workers Exited\n");
-}	
+}
